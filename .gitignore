@@ -1,0 +1,151 @@
+# Arduino IDE files
+*.hex
+*.elf
+*.bin
+*.map
+*.lst
+*.sym
+*.lss
+*.eep
+*.srec
+*.o
+*.d
+*.a
+*.so
+*.dll
+*.dylib
+
+# Build directories
+build/
+Build/
+Debug/
+Release/
+.build/
+.vscode/
+.vs/
+
+# Credentials and sensitive files
+credentials.h
+config.h
+secrets.h
+passwords.txt
+api_keys.txt
+*.key
+*.pem
+*.p12
+*.crt
+*.cert
+
+# WiFi and network configuration
+wifi_config.h
+network_credentials.h
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+*.sublime-project
+*.sublime-workspace
+.idea/
+*.iml
+
+# Python files (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js files (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Documentation build files
+docs/_build/
+docs/.doctrees/
+
+# Test files
+test_results/
+coverage/
+
+# Backup files
+*.backup
+*.old
+
+# Personal notes
+notes.txt
+TODO.txt
+personal/
+
+# Hardware specific
+*.fzz
+*.fzb
+*.sch
+*.brd
+*.lbr
+
+# Libraries (comment out if you want to include them)
+# libraries/
+
+# Compiled documentation
+*.pdf
+*.docx
+
+# Cache files
+.cache/
+*.cache
+
+# Platform specific
+[Tt]humbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.history/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
