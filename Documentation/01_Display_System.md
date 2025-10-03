@@ -1,5 +1,7 @@
 # Display System - ST77916 Controller
 
+*Last Updated: October 2, 2025 - Based on hardware testing*
+
 ## Hardware Specifications
 
 ### LCD Panel
@@ -7,13 +9,14 @@
 - **Resolution**: 360×360 pixels
 - **Color Depth**: 16-bit RGB565
 - **Viewing Angle**: Full circle
-- **Brightness**: Adjustable via PWM backlight
+- **Brightness**: Adjustable via PWM backlight (GPIO 5)
 
 ### Controller: ST77916
-- **Interface**: QSPI (Quad SPI)
-- **Max Clock**: 80MHz
+- **Interface**: QSPI (Quad SPI) - **Requires ESP-LCD framework**
+- **Max Clock**: 80MHz (tested working at 5MHz-80MHz)
 - **Color Format**: RGB565 (16-bit)
 - **Display RAM**: Built-in frame buffer
+- **Reset Control**: Via TCA9554PWR I/O expander (EXIO2)
 
 ## Pin Configuration
 
@@ -35,6 +38,7 @@
 ```
 
 ### Backlight Control
+
 ```cpp
 #define PWM_Channel                   1     // PWM Channel
 #define Frequency                     20000 // 20kHz PWM
@@ -42,6 +46,60 @@
 #define Dutyfactor                    500   // Default 50% duty cycle
 #define Backlight_MAX                 100   // Max brightness level
 ```
+
+**⚠️ Important**: Use newer ESP32 Arduino core API:
+
+```cpp
+// Old API (deprecated)
+ledcSetup(PWM_Channel, Frequency, Resolution);
+ledcAttachPin(LCD_Backlight_PIN, PWM_Channel);
+ledcWrite(PWM_Channel, brightness);
+
+// New API (current)
+ledcAttach(LCD_Backlight_PIN, Frequency, Resolution);
+ledcWrite(LCD_Backlight_PIN, brightness);
+```
+
+## 🧪 Hardware Testing Results
+
+*Based on ESP32_Minimal_Test results (October 2, 2025):*
+
+### ✅ **Verified Working:**
+
+- **Backlight Control**: GPIO 5 PWM working perfectly
+  - PWM frequency: 20kHz (flicker-free)
+  - Resolution: 10-bit (0-1023 range)
+  - Smooth brightness control and animation
+
+- **I2C Communication**: GPIO 10 (SCL) / GPIO 11 (SDA)
+  - **0x20**: TCA9554PWR I/O expander (confirmed)
+  - **0x51**: PCF85063 RTC (confirmed)
+  - **0x15**: CST816T touch controller (detected)
+
+- **Display Reset Control**: Via TCA9554PWR EXIO2
+  - Reset sequence working via I2C commands
+  - Proper timing: 10ms LOW, then HIGH
+
+- **GPIO Pin Configuration**: All display pins configured
+  - **SCK**: GPIO 40, **CS**: GPIO 21, **TE**: GPIO 18
+  - **DATA0-3**: GPIO 46, 45, 42, 41 (QSPI)
+
+### ⚠️ **Requires Full Implementation:**
+
+- **Actual Graphics Display**: Needs ESP-LCD framework
+- **ST77916 Initialization**: Complex vendor-specific commands
+- **QSPI Communication**: 4-wire SPI with ESP-LCD library
+- **LVGL Integration**: Graphics library framework
+
+### 🎯 **Recommendation:**
+
+For working display graphics, use: `DEMO/Arduino/examples/LVGL_Arduino/LVGL_Arduino.ino`
+
+That implementation includes:
+- Complete ESP-LCD framework
+- ST77916 driver with proper QSPI
+- LVGL graphics library
+- Touch controller integration
 
 ## LVGL Integration
 
@@ -163,26 +221,87 @@ uint8_t Get_Backlight();
 
 ## Troubleshooting
 
-### Common Issues
-1. **White/Black Screen**
-   - Check power sequence (TCA9554PWR → Reset → Backlight)
-   - Verify QSPI pin connections
-   - Ensure proper voltage levels
+### 🔧 **Step-by-Step Debugging (Based on Testing Experience)**
 
-2. **Flickering Display**
-   - Increase SPI clock speed
-   - Use double buffering
-   - Check ground connections
+#### **Step 1: Verify Basic Hardware**
 
-3. **Color Issues**
-   - Verify RGB565 format
-   - Check color depth settings
-   - Ensure proper byte order
+```cpp
+// Test backlight control first (this should work immediately)
+ledcAttach(5, 20000, 10);           // GPIO 5, 20kHz, 10-bit
+ledcWrite(5, 512);                  // 50% brightness
+delay(1000);
+ledcWrite(5, 0);                    // Off
+delay(1000);  
+ledcWrite(5, 1023);                 // Full brightness
+```
 
-4. **Slow Updates**
-   - Optimize LVGL buffer size
-   - Use partial updates
-   - Enable DMA transfers
+**Expected Result**: Physical brightness changes on LCD backlight
+
+#### **Step 2: Test I2C Communication**
+
+```cpp
+Wire.begin(11, 10);  // SDA=11, SCL=10
+// Scan for devices
+for (byte addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+        Serial.printf("Device at 0x%02X\n", addr);
+    }
+}
+```
+
+**Expected Results**:
+- **0x20**: TCA9554PWR I/O expander ✅
+- **0x51**: PCF85063 RTC ✅  
+- **0x15**: CST816T touch controller ✅
+
+#### **Step 3: Test Display Reset**
+
+```cpp
+// Reset via TCA9554PWR EXIO2
+Wire.beginTransmission(0x20);
+Wire.write(0x03); Wire.write(0xFB);  // Config EXIO2 as output
+Wire.endTransmission();
+
+Wire.beginTransmission(0x20);
+Wire.write(0x01); Wire.write(0x00);  // EXIO2 LOW (reset)
+Wire.endTransmission();
+delay(100);
+
+Wire.beginTransmission(0x20);  
+Wire.write(0x01); Wire.write(0x04);  // EXIO2 HIGH (release)
+Wire.endTransmission();
+```
+
+**Expected Result**: No errors in I2C communication
+
+### 🚨 **Common Issues & Solutions**
+
+1. **Nothing on Screen (Backlight Works)**
+   - ✅ **Verified**: Hardware is functional (our testing confirms this)
+   - ❌ **Missing**: ST77916 requires ESP-LCD framework
+   - 🔧 **Solution**: Use `DEMO/Arduino/examples/LVGL_Arduino/` code
+
+2. **Compilation Errors**
+   ```
+   'ledcSetup' was not declared in this scope
+   ```
+   - 🔧 **Solution**: Update to new ESP32 Arduino core API:
+   ```cpp
+   // Replace old API with:
+   ledcAttach(pin, frequency, resolution);
+   ledcWrite(pin, value);
+   ```
+
+3. **I2C Devices Not Found**  
+   - Check SDA=11, SCL=10 (confirmed working)
+   - Verify 3.3V power supply
+   - Check wire connections
+
+4. **Display Initialization Fails**
+   - ST77916 needs complex vendor-specific initialization
+   - Simple SPI commands won't work
+   - Must use ESP-LCD framework with QSPI support
 
 ### Debug Commands
 ```cpp

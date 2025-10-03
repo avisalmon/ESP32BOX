@@ -1,8 +1,8 @@
 #include "LVGL_Example.h"
 #include "LVGL_Music.h"
-#include <demos/lv_demos.h>
-// #include <demos/music/lv_demo_music_main.h>
-// #include <demos/music/lv_demo_music_list.h>
+#include "../../libraries/lvgl/demos/lv_demos.h"
+#include "../../libraries/lvgl/demos/music/lv_demo_music_main.h"
+#include "../../libraries/lvgl/demos/music/lv_demo_music_list.h"
 
 
 /**********************
