@@ -1,0 +1,11 @@
+# WiFi credentials - keep this private!
+password.json
+
+# Build artifacts
+*.bin
+*.elf
+*.map
+
+# Arduino build folders
+build/
+.build/

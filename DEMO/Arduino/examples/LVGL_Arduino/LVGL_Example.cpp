@@ -536,3 +536,8 @@ void LVGL_Backlight_adjustment(uint8_t Backlight) {
   Set_Backlight(Backlight);                                 
 }
 
+void LVGL_WiFi_Display(const char* text) {
+  if (Wireless_Scan != NULL) {
+    lv_textarea_set_text(Wireless_Scan, text);
+  }
+}
