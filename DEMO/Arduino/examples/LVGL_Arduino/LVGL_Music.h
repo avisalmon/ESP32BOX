@@ -2,13 +2,13 @@
 /*********************
  *      INCLUDES
  *********************/
-#include "../../libraries/lvgl/demos/music/lv_demo_music_list.h"
-#include "../../libraries/lvgl/demos/music/lv_demo_music.h"
-#include "../../libraries/lvgl/demos/lv_demos.h"
-#include "../../libraries/lvgl/lvgl.h"
-#include "../../libraries/lvgl/demos/music/assets/spectrum_1.h"
-#include "../../libraries/lvgl/demos/music/assets/spectrum_2.h"
-#include "../../libraries/lvgl/demos/music/assets/spectrum_3.h"
+// #include <demos/music/lv_demo_music_list.h>
+// #include <demos/music/lv_demo_music.h>        // Commented out for compilation
+// #include <demos/lv_demos.h>                   // Commented out for compilation
+#include <lvgl.h>
+// #include <demos/music/assets/spectrum_1.h>    // Commented out for compilation
+// #include <demos/music/assets/spectrum_2.h>    // Commented out for compilation
+// #include <demos/music/assets/spectrum_3.h>    // Commented out for compilation
 
 #include "SD_Card.h"
 #include "Audio_PCM5101.h"
@@ -28,7 +28,12 @@ void _img_set_zoom_anim_cb(void * obj, int32_t zoom);
  * warning.
  */
 void _obj_set_x_anim_cb(void * obj, int32_t x);
-// Removed conflicting LVGL function declarations - they're already in lv_demo_music_main.h
+lv_obj_t * _lv_demo_music_main_create(lv_obj_t * parent);
+void _lv_demo_music_main_close(void);
+void _lv_demo_music_album_next(bool next);
+void _lv_demo_music_play(uint32_t id);
+void _lv_demo_music_resume(void);
+void _lv_demo_music_pause(void);
 
 /**********************
  *   STATIC FUNCTIONS

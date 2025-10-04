@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../libraries/lvgl/lvgl.h"
+#include <lvgl.h>
 #include "lv_conf.h"
-#include "../../libraries/lvgl/demos/lv_demos.h"
+// #include <demos/lv_demos.h>  // Commented out for now to fix compilation
 #include <esp_heap_caps.h>
 #include "Display_ST77916.h"
 #include "Touch_CST816.h"
