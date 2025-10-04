@@ -1,16 +1,17 @@
 #include "WiFi_Manager.h"
 #include "LVGL_Example.h"
+#include "WiFi_Config.h"  // Local config file with passwords (not in git)
 
 WiFiManager::WiFiManager() {
-    // Hardcoded passwords - modify these as needed
-    passwords[0] = "your_password_1";
-    passwords[1] = "your_password_2";
-    passwordCount = 2;
+    // Load passwords from WiFi_Config.h (compiled in, not in git)
+    passwords[0] = WIFI_PASSWORD_1;
+    passwords[1] = WIFI_PASSWORD_2;
+    passwordCount = WIFI_PASSWORD_COUNT;
     
     isConnected = false;
     connectedSSID = "";
     
-    Serial.println("WiFi Manager initialized with hardcoded passwords");
+    Serial.println("WiFi Manager initialized from WiFi_Config.h");
 }
 
 bool WiFiManager::connectToBestNetwork() {
@@ -50,8 +51,8 @@ bool WiFiManager::connectToBestNetwork() {
                       WiFi.channel(i), WiFi.encryptionType(i));
     }
     
-    // Prioritize "Hot1" network - move it to the front if found
-    const char* prioritySSID = "Hot1";
+    // Prioritize network from config - move it to the front if found
+    const char* prioritySSID = WIFI_PRIORITY_SSID;
     int priorityIndex = -1;
     
     for (int i = 0; i < n; i++) {

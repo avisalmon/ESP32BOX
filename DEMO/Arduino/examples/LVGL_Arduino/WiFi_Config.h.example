@@ -1,0 +1,13 @@
+// WiFi_Config.h.example - Template configuration file
+// Copy this to WiFi_Config.h and add your actual passwords
+
+#pragma once
+
+// Define your WiFi passwords here
+// These will be compiled into the firmware but not stored in git
+const char* WIFI_PASSWORD_1 = "your_password_1";
+const char* WIFI_PASSWORD_2 = "your_password_2";
+const int WIFI_PASSWORD_COUNT = 2;
+
+// Priority network to try first (case-insensitive)
+const char* WIFI_PRIORITY_SSID = "YourNetworkName";

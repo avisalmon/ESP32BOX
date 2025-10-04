@@ -1,5 +1,6 @@
 # WiFi credentials - keep this private!
 password.json
+WiFi_Config.h
 
 # Build artifacts
 *.bin
