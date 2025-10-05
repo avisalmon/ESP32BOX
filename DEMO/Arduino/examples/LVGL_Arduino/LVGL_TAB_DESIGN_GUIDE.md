@@ -1309,12 +1309,756 @@ if (My_Display != NULL) {
 
 ---
 
+## Flash Storage (Preferences Library)
+
+The ESP32-S3 has built-in Non-Volatile Storage (NVS) that persists data across reboots. Use the `Preferences` library for key-value storage.
+
+### Setup Requirements
+
+**Important**: Must initialize NVS before using Preferences!
+
+```cpp
+#include <Preferences.h>
+#include <nvs_flash.h>
+
+Preferences preferences;
+
+void setup() {
+    // Initialize NVS flash (REQUIRED!)
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        nvs_flash_erase();
+        err = nvs_flash_init();
+    }
+    
+    // Now safe to use Preferences
+}
+```
+
+### Basic Read/Write Operations
+
+**Writing Data:**
+```cpp
+void saveSettings() {
+    if (preferences.begin("settings", false)) {  // false = read-write mode
+        preferences.putInt("brightness", 80);
+        preferences.putString("device_name", "MyESP32");
+        preferences.putBool("wifi_enabled", true);
+        preferences.putFloat("volume", 0.75);
+        preferences.end();
+        Serial.println("Settings saved!");
+    } else {
+        Serial.println("Failed to open Preferences");
+    }
+}
+```
+
+**Reading Data:**
+```cpp
+void loadSettings() {
+    if (preferences.begin("settings", true)) {  // true = read-only mode
+        int brightness = preferences.getInt("brightness", 50);      // 50 = default
+        String name = preferences.getString("device_name", "ESP32"); // "ESP32" = default
+        bool wifi = preferences.getBool("wifi_enabled", true);       // true = default
+        float volume = preferences.getFloat("volume", 0.5);         // 0.5 = default
+        preferences.end();
+        
+        Serial.printf("Brightness: %d\n", brightness);
+        Serial.printf("Name: %s\n", name.c_str());
+    }
+}
+```
+
+### Real-World Example: WiFi Password Storage
+
+See `WiFi_Manager.cpp` for a complete implementation. Key points:
+
+**Saving Multiple Values:**
+```cpp
+void savePasswordsToFlash() {
+    if (!preferences.begin("wifi", false)) {
+        Serial.println("Failed to open Preferences for writing");
+        return;
+    }
+    
+    // Save count
+    size_t bytesWritten = preferences.putInt("pass_count", passwordCount);
+    Serial.printf("Saved pass_count: %d bytes written\n", bytesWritten);
+    
+    // Save each password
+    for (int i = 0; i < passwordCount; i++) {
+        String key = "pass_" + String(i);
+        bytesWritten = preferences.putString(key.c_str(), passwords[i]);
+        Serial.printf("Saved %s: [%s] - %d bytes\n", 
+                     key.c_str(), passwords[i].c_str(), bytesWritten);
+    }
+    
+    preferences.end();
+}
+```
+
+**Loading Multiple Values:**
+```cpp
+void loadPasswordsFromFlash() {
+    if (!preferences.begin("wifi", true)) {
+        Serial.println("Failed to open Preferences for reading");
+        return;
+    }
+    
+    passwordCount = preferences.getInt("pass_count", 0);
+    Serial.printf("Loading %d passwords from flash\n", passwordCount);
+    
+    for (int i = 0; i < passwordCount && i < MAX_PASSWORDS; i++) {
+        String key = "pass_" + String(i);
+        passwords[i] = preferences.getString(key.c_str(), "");
+        Serial.printf("Loaded %s: [%s]\n", key.c_str(), passwords[i].c_str());
+    }
+    
+    preferences.end();
+}
+```
+
+### Supported Data Types
+
+| Type | Write Method | Read Method | Example |
+|------|-------------|-------------|---------|
+| `int8_t` | `putChar(key, value)` | `getChar(key, default)` | `-128 to 127` |
+| `uint8_t` | `putUChar(key, value)` | `getUChar(key, default)` | `0 to 255` |
+| `int16_t` | `putShort(key, value)` | `getShort(key, default)` | `-32768 to 32767` |
+| `uint16_t` | `putUShort(key, value)` | `getUShort(key, default)` | `0 to 65535` |
+| `int32_t` | `putInt(key, value)` | `getInt(key, default)` | `±2 billion` |
+| `uint32_t` | `putUInt(key, value)` | `getUInt(key, default)` | `0 to 4 billion` |
+| `int64_t` | `putLong(key, value)` | `getLong(key, default)` | Very large |
+| `uint64_t` | `putULong(key, value)` | `getULong(key, default)` | Very large |
+| `float` | `putFloat(key, value)` | `getFloat(key, default)` | `3.14159` |
+| `double` | `putDouble(key, value)` | `getDouble(key, default)` | High precision |
+| `bool` | `putBool(key, value)` | `getBool(key, default)` | `true/false` |
+| `String` | `putString(key, value)` | `getString(key, default)` | Text data |
+| `const char*` | `putString(key, value)` | `getString(key, default)` | Text data |
+| `byte[]` | `putBytes(key, value, len)` | `getBytes(key, buf, len)` | Binary data |
+
+### Utility Functions
+
+**Check if Key Exists:**
+```cpp
+if (preferences.isKey("brightness")) {
+    int value = preferences.getInt("brightness");
+}
+```
+
+**Remove a Key:**
+```cpp
+preferences.remove("old_setting");
+```
+
+**Clear All Keys in Namespace:**
+```cpp
+preferences.clear();  // Deletes all keys in current namespace
+```
+
+**Get Free Entries:**
+```cpp
+size_t freeEntries = preferences.freeEntries();
+Serial.printf("Free NVS entries: %d\n", freeEntries);
+```
+
+### Namespaces
+
+Organize data into different namespaces (max 15 characters):
+
+```cpp
+// WiFi settings
+preferences.begin("wifi", false);
+preferences.putString("ssid", "MyNetwork");
+preferences.end();
+
+// Display settings
+preferences.begin("display", false);
+preferences.putInt("brightness", 80);
+preferences.end();
+
+// Audio settings
+preferences.begin("audio", false);
+preferences.putFloat("volume", 0.75);
+preferences.end();
+```
+
+### Best Practices
+
+✅ **Do**: Initialize NVS first
+```cpp
+esp_err_t err = nvs_flash_init();
+// Handle errors before using Preferences
+```
+
+✅ **Do**: Check begin() return value
+```cpp
+if (!preferences.begin("myapp", false)) {
+    Serial.println("Preferences failed!");
+    return;
+}
+```
+
+✅ **Do**: Use read-only mode when only reading
+```cpp
+preferences.begin("settings", true);  // true = read-only, faster
+```
+
+✅ **Do**: Always call end()
+```cpp
+preferences.begin("myapp", false);
+preferences.putInt("value", 42);
+preferences.end();  // Don't forget!
+```
+
+✅ **Do**: Provide sensible defaults
+```cpp
+int brightness = preferences.getInt("brightness", 50);  // 50 if not found
+```
+
+❌ **Don't**: Keep Preferences open too long
+```cpp
+// Bad - keeps flash locked
+preferences.begin("settings", false);
+delay(5000);  // Don't do this!
+preferences.putInt("value", 42);
+preferences.end();
+```
+
+❌ **Don't**: Write on every loop iteration
+```cpp
+// Bad - wears out flash
+void loop() {
+    preferences.begin("data", false);
+    preferences.putInt("counter", counter++);  // Flash has limited write cycles!
+    preferences.end();
+}
+```
+
+❌ **Don't**: Use keys longer than 15 characters
+```cpp
+// Bad - key too long
+preferences.putInt("this_is_a_very_long_key_name", 42);  // Will fail!
+
+// Good - short key
+preferences.putInt("longkey", 42);
+```
+
+### Flash Storage Limits
+
+- **Namespace Name**: Max 15 characters
+- **Key Name**: Max 15 characters  
+- **String Value**: Max ~4000 bytes per key
+- **Write Cycles**: ~100,000 writes per sector
+- **Total NVS Size**: Default 20KB (configurable in partition table)
+
+### Example: Settings Tab with Flash Storage
+
+```cpp
+static lv_obj_t * brightness_slider;
+static lv_obj_t * volume_slider;
+static int current_brightness = 50;
+static float current_volume = 0.5;
+
+static void settings_event_handler(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        if (obj == brightness_slider) {
+            current_brightness = lv_slider_get_value(obj);
+            
+            // Save to flash
+            preferences.begin("settings", false);
+            preferences.putInt("brightness", current_brightness);
+            preferences.end();
+            
+            Serial.printf("Brightness saved: %d\n", current_brightness);
+        }
+        else if (obj == volume_slider) {
+            current_volume = lv_slider_get_value(obj) / 100.0;
+            
+            // Save to flash
+            preferences.begin("settings", false);
+            preferences.putFloat("volume", current_volume);
+            preferences.end();
+            
+            Serial.printf("Volume saved: %.2f\n", current_volume);
+        }
+    }
+}
+
+static void Settings_create(lv_obj_t * parent) {
+    // Load saved settings
+    preferences.begin("settings", true);
+    current_brightness = preferences.getInt("brightness", 50);
+    current_volume = preferences.getFloat("volume", 0.5);
+    preferences.end();
+    
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Brightness slider
+    lv_obj_t * bright_label = lv_label_create(panel);
+    lv_label_set_text(bright_label, "Brightness");
+    
+    brightness_slider = lv_slider_create(panel);
+    lv_slider_set_range(brightness_slider, 0, 100);
+    lv_slider_set_value(brightness_slider, current_brightness, LV_ANIM_OFF);
+    lv_obj_add_event_cb(brightness_slider, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    
+    // Volume slider
+    lv_obj_t * vol_label = lv_label_create(panel);
+    lv_label_set_text(vol_label, "Volume");
+    
+    volume_slider = lv_slider_create(panel);
+    lv_slider_set_range(volume_slider, 0, 100);
+    lv_slider_set_value(volume_slider, (int)(current_volume * 100), LV_ANIM_OFF);
+    lv_obj_add_event_cb(volume_slider, settings_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+}
+```
+
+---
+
 ## Resources
 
 - **LVGL Documentation**: https://docs.lvgl.io/8.3/
 - **LVGL Widgets**: https://docs.lvgl.io/8.3/widgets/index.html
+- **ESP32 Preferences Library**: https://github.com/espressif/arduino-esp32/tree/master/libraries/Preferences
 - **Examples**: See `Onboard_create()` and `Music_create()` in `LVGL_Example.cpp`
+- **WiFi Flash Storage**: See `WiFi_Manager.cpp` for complete implementation
 - **LVGL Forum**: https://forum.lvgl.io/
+
+---
+
+## Advanced: Charts and Data Visualization
+
+LVGL provides powerful chart widgets for displaying data trends.
+
+### Line Chart Example
+
+```cpp
+static lv_obj_t * chart;
+static lv_chart_series_t * ser1;
+
+static void Chart_create(lv_obj_t * parent) {
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Create chart
+    chart = lv_chart_create(panel);
+    lv_obj_set_size(chart, 300, 200);
+    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
+    
+    // Configure chart
+    lv_chart_set_point_count(chart, 20);  // 20 data points
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100);
+    lv_chart_set_update_mode(chart, LV_CHART_UPDATE_MODE_SHIFT);  // Scroll left
+    
+    // Add a series
+    ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+    
+    // Initialize with random data
+    for(int i = 0; i < 20; i++) {
+        lv_chart_set_next_value(chart, ser1, random(0, 100));
+    }
+}
+
+// Update chart with new data (call periodically)
+void updateChart(int newValue) {
+    if (chart != NULL) {
+        lv_chart_set_next_value(chart, ser1, newValue);
+        lv_chart_refresh(chart);
+    }
+}
+```
+
+### Bar Chart Example
+
+```cpp
+static void BarChart_create(lv_obj_t * parent) {
+    lv_obj_t * chart = lv_chart_create(parent);
+    lv_obj_set_size(chart, 300, 200);
+    lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
+    lv_chart_set_point_count(chart, 5);
+    
+    // Add series for different categories
+    lv_chart_series_t * ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_BLUE), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+    
+    // Set values
+    lv_chart_set_value_by_id(chart, ser1, 0, 50);
+    lv_chart_set_value_by_id(chart, ser1, 1, 70);
+    lv_chart_set_value_by_id(chart, ser1, 2, 60);
+    lv_chart_set_value_by_id(chart, ser2, 0, 30);
+    lv_chart_set_value_by_id(chart, ser2, 1, 90);
+    lv_chart_set_value_by_id(chart, ser2, 2, 40);
+}
+```
+
+---
+
+## Advanced: Arc (Circular Progress/Gauge)
+
+Perfect for circular displays like the 1.85" screen!
+
+### Circular Progress Indicator
+
+```cpp
+static lv_obj_t * arc_progress;
+
+static void Arc_create(lv_obj_t * parent) {
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Create arc
+    arc_progress = lv_arc_create(panel);
+    lv_obj_set_size(arc_progress, 250, 250);
+    lv_arc_set_rotation(arc_progress, 135);  // Start from top-left
+    lv_arc_set_bg_angles(arc_progress, 0, 270);  // 3/4 circle
+    lv_arc_set_value(arc_progress, 75);  // 75%
+    
+    // Style the arc
+    lv_obj_set_style_arc_width(arc_progress, 20, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(arc_progress, 20, LV_PART_MAIN);
+    lv_obj_set_style_arc_color(arc_progress, lv_palette_main(LV_PALETTE_BLUE), LV_PART_INDICATOR);
+    
+    // Remove knob (for pure progress indicator)
+    lv_obj_remove_style(arc_progress, NULL, LV_PART_KNOB);
+    lv_obj_clear_flag(arc_progress, LV_OBJ_FLAG_CLICKABLE);
+    
+    // Add label in center
+    lv_obj_t * label = lv_label_create(arc_progress);
+    lv_label_set_text(label, "75%");
+    lv_obj_center(label);
+}
+
+// Update progress
+void updateProgress(int percent) {
+    if (arc_progress != NULL) {
+        lv_arc_set_value(arc_progress, percent);
+    }
+}
+```
+
+### Interactive Gauge/Dial
+
+```cpp
+static void gauge_event_handler(lv_event_t * e) {
+    lv_obj_t * arc = lv_event_get_target(e);
+    if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED) {
+        int value = lv_arc_get_value(arc);
+        Serial.printf("Gauge value: %d\n", value);
+        
+        // Save to flash
+        preferences.begin("settings", false);
+        preferences.putInt("gauge_value", value);
+        preferences.end();
+    }
+}
+
+static void Gauge_create(lv_obj_t * parent) {
+    lv_obj_t * gauge = lv_arc_create(parent);
+    lv_obj_set_size(gauge, 200, 200);
+    lv_arc_set_range(gauge, 0, 100);
+    lv_arc_set_value(gauge, 50);
+    lv_obj_add_event_cb(gauge, gauge_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    
+    // Make it draggable
+    lv_obj_set_style_arc_color(gauge, lv_palette_main(LV_PALETTE_GREEN), LV_PART_INDICATOR);
+}
+```
+
+---
+
+## Advanced: Spinbox (Numeric Input)
+
+For precise numeric input with increment/decrement buttons.
+
+```cpp
+static lv_obj_t * spinbox;
+
+static void spinbox_increment_event_handler(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_SHORT_CLICKED || code == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_increment(spinbox);
+    }
+}
+
+static void spinbox_decrement_event_handler(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_SHORT_CLICKED || code == LV_EVENT_LONG_PRESSED_REPEAT) {
+        lv_spinbox_decrement(spinbox);
+    }
+}
+
+static void Spinbox_create(lv_obj_t * parent) {
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Create spinbox
+    spinbox = lv_spinbox_create(panel);
+    lv_spinbox_set_range(spinbox, 0, 100);
+    lv_spinbox_set_digit_format(spinbox, 3, 0);  // 3 digits, 0 decimals
+    lv_spinbox_set_step(spinbox, 1);  // Increment by 1
+    lv_spinbox_set_value(spinbox, 50);
+    lv_obj_set_width(spinbox, 150);
+    
+    // Create increment button
+    lv_obj_t * btn_plus = lv_btn_create(panel);
+    lv_obj_set_size(btn_plus, 50, 50);
+    lv_obj_t * label_plus = lv_label_create(btn_plus);
+    lv_label_set_text(label_plus, "+");
+    lv_obj_center(label_plus);
+    lv_obj_add_event_cb(btn_plus, spinbox_increment_event_handler, LV_EVENT_ALL, NULL);
+    
+    // Create decrement button
+    lv_obj_t * btn_minus = lv_btn_create(panel);
+    lv_obj_set_size(btn_minus, 50, 50);
+    lv_obj_t * label_minus = lv_label_create(btn_minus);
+    lv_label_set_text(label_minus, "-");
+    lv_obj_center(label_minus);
+    lv_obj_add_event_cb(btn_minus, spinbox_decrement_event_handler, LV_EVENT_ALL, NULL);
+    
+    // Layout
+    static lv_coord_t col_dsc[] = {50, 150, 50, LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {50, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(panel, col_dsc, row_dsc);
+    
+    lv_obj_set_grid_cell(btn_minus, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 0, 1);
+    lv_obj_set_grid_cell(spinbox, LV_GRID_ALIGN_CENTER, 1, 1, LV_GRID_ALIGN_CENTER, 0, 1);
+    lv_obj_set_grid_cell(btn_plus, LV_GRID_ALIGN_CENTER, 2, 1, LV_GRID_ALIGN_CENTER, 0, 1);
+}
+
+// Get spinbox value
+int getSpinboxValue() {
+    return lv_spinbox_get_value(spinbox);
+}
+```
+
+---
+
+## Advanced: Roller (Scrollable Picker)
+
+Great for selecting from a list of options.
+
+```cpp
+static lv_obj_t * roller;
+
+static void roller_event_handler(lv_event_t * e) {
+    if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED) {
+        char buf[32];
+        lv_roller_get_selected_str(roller, buf, sizeof(buf));
+        Serial.printf("Selected: %s\n", buf);
+        
+        uint16_t selected = lv_roller_get_selected(roller);
+        Serial.printf("Index: %d\n", selected);
+    }
+}
+
+static void Roller_create(lv_obj_t * parent) {
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Create roller
+    roller = lv_roller_create(panel);
+    lv_roller_set_options(roller, 
+        "WiFi\n"
+        "Bluetooth\n"
+        "Ethernet\n"
+        "Cellular\n"
+        "LoRa\n"
+        "Zigbee\n"
+        "Thread",
+        LV_ROLLER_MODE_NORMAL);  // or LV_ROLLER_MODE_INFINITE for infinite scroll
+    
+    lv_roller_set_visible_row_count(roller, 4);  // Show 4 rows at once
+    lv_obj_set_width(roller, 200);
+    lv_obj_add_event_cb(roller, roller_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    
+    // Set initial selection
+    lv_roller_set_selected(roller, 0, LV_ANIM_OFF);
+}
+```
+
+---
+
+## Advanced: LED Indicator
+
+Simple LED-style indicator for status display.
+
+```cpp
+static lv_obj_t * led_red;
+static lv_obj_t * led_green;
+static lv_obj_t * led_blue;
+
+static void LED_create(lv_obj_t * parent) {
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Create LEDs
+    led_red = lv_led_create(panel);
+    lv_obj_set_size(led_red, 50, 50);
+    lv_led_set_color(led_red, lv_palette_main(LV_PALETTE_RED));
+    lv_led_on(led_red);
+    
+    led_green = lv_led_create(panel);
+    lv_obj_set_size(led_green, 50, 50);
+    lv_led_set_color(led_green, lv_palette_main(LV_PALETTE_GREEN));
+    lv_led_off(led_green);
+    
+    led_blue = lv_led_create(panel);
+    lv_obj_set_size(led_blue, 50, 50);
+    lv_led_set_color(led_blue, lv_palette_main(LV_PALETTE_BLUE));
+    lv_led_off(led_blue);
+    
+    // Add labels
+    lv_obj_t * label_r = lv_label_create(panel);
+    lv_label_set_text(label_r, "Error");
+    
+    lv_obj_t * label_g = lv_label_create(panel);
+    lv_label_set_text(label_g, "Ready");
+    
+    lv_obj_t * label_b = lv_label_create(panel);
+    lv_label_set_text(label_b, "Busy");
+}
+
+// Control LEDs
+void setStatus(const char* status) {
+    if (strcmp(status, "error") == 0) {
+        lv_led_on(led_red);
+        lv_led_off(led_green);
+        lv_led_off(led_blue);
+    } else if (strcmp(status, "ready") == 0) {
+        lv_led_off(led_red);
+        lv_led_on(led_green);
+        lv_led_off(led_blue);
+    } else if (strcmp(status, "busy") == 0) {
+        lv_led_off(led_red);
+        lv_led_off(led_green);
+        lv_led_on(led_blue);
+    }
+}
+
+// Toggle LED
+void toggleLED() {
+    lv_led_toggle(led_green);
+}
+
+// Set LED brightness (0-255)
+void setLEDBrightness(uint8_t brightness) {
+    lv_led_set_brightness(led_green, brightness);
+}
+```
+
+---
+
+## Advanced: Message Box (Modal Dialog)
+
+Create popup dialogs for confirmations and alerts.
+
+```cpp
+static void msgbox_event_handler(lv_event_t * e) {
+    lv_obj_t * obj = lv_event_get_current_target(e);
+    if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED) {
+        const char * txt = lv_msgbox_get_active_btn_text(obj);
+        if (txt) {
+            Serial.printf("Button clicked: %s\n", txt);
+            
+            if (strcmp(txt, "Delete") == 0) {
+                // Perform delete action
+                Serial.println("Deleting...");
+            }
+            
+            // Close the message box
+            lv_msgbox_close(obj);
+        }
+    }
+}
+
+void showMessageBox(const char* title, const char* message) {
+    static const char * btns[] = {"OK", "Cancel", ""};
+    
+    lv_obj_t * mbox = lv_msgbox_create(NULL, title, message, btns, true);
+    lv_obj_add_event_cb(mbox, msgbox_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_center(mbox);
+}
+
+// Delete confirmation dialog
+void showDeleteConfirmation() {
+    static const char * btns[] = {"Delete", "Cancel", ""};
+    
+    lv_obj_t * mbox = lv_msgbox_create(NULL, 
+        "Confirm Delete", 
+        "Are you sure you want to delete this item?", 
+        btns, true);
+    lv_obj_add_event_cb(mbox, msgbox_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_center(mbox);
+}
+```
+
+---
+
+## Advanced: Keyboard (On-Screen)
+
+Display an on-screen keyboard for text input.
+
+```cpp
+static lv_obj_t * keyboard;
+static lv_obj_t * textarea_input;
+
+static void keyboard_event_handler(lv_event_t * e) {
+    lv_obj_t * kb = lv_event_get_target(e);
+    lv_keyboard_def_event_cb(e);  // Call default handler first
+    
+    if (lv_event_get_code(e) == LV_EVENT_READY || lv_event_get_code(e) == LV_EVENT_CANCEL) {
+        // Get the text
+        const char * text = lv_textarea_get_text(textarea_input);
+        Serial.printf("Input: %s\n", text);
+        
+        // Save to flash
+        preferences.begin("input", false);
+        preferences.putString("last_input", text);
+        preferences.end();
+        
+        // Hide keyboard
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void textarea_event_handler(lv_event_t * e) {
+    if (lv_event_get_code(e) == LV_EVENT_FOCUSED) {
+        // Show keyboard when textarea is focused
+        if (keyboard != NULL) {
+            lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+
+static void Keyboard_create(lv_obj_t * parent) {
+    lv_obj_t * panel = lv_obj_create(parent);
+    
+    // Create textarea
+    textarea_input = lv_textarea_create(panel);
+    lv_obj_set_size(textarea_input, 300, 80);
+    lv_textarea_set_placeholder_text(textarea_input, "Enter text...");
+    lv_textarea_set_one_line(textarea_input, false);  // Multi-line
+    lv_textarea_set_max_length(textarea_input, 100);
+    lv_obj_add_event_cb(textarea_input, textarea_event_handler, LV_EVENT_FOCUSED, NULL);
+    
+    // Create keyboard
+    keyboard = lv_keyboard_create(panel);
+    lv_obj_set_size(keyboard, 340, 200);
+    lv_keyboard_set_textarea(keyboard, textarea_input);  // Link to textarea
+    lv_keyboard_set_mode(keyboard, LV_KEYBOARD_MODE_TEXT_LOWER);  // Lowercase mode
+    lv_obj_add_event_cb(keyboard, keyboard_event_handler, LV_EVENT_ALL, NULL);
+    
+    // Initially hide keyboard
+    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+}
+
+// Show keyboard with specific mode
+void showKeyboard(lv_keyboard_mode_t mode) {
+    if (keyboard != NULL) {
+        lv_keyboard_set_mode(keyboard, mode);  // LV_KEYBOARD_MODE_NUMBER, etc.
+        lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+```
 
 ---
 
@@ -1334,6 +2078,21 @@ When adding a new tab:
 - [ ] Create update functions in header file
 - [ ] Update `auto_switch()` if adding to auto-rotation
 - [ ] Test on hardware!
+
+### Flash Storage Checklist
+
+When using Preferences:
+- [ ] Include `<Preferences.h>` and `<nvs_flash.h>` in header
+- [ ] Call `nvs_flash_init()` in setup/constructor
+- [ ] Handle NVS initialization errors
+- [ ] Check `preferences.begin()` return value
+- [ ] Use descriptive namespace (max 15 chars)
+- [ ] Use short key names (max 15 chars)
+- [ ] Provide sensible default values
+- [ ] Always call `preferences.end()` after operations
+- [ ] Don't write in tight loops (flash wear)
+- [ ] Use read-only mode when only reading
+- [ ] Test persistence across reboots
 
 ---
 
