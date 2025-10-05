@@ -1,5 +1,6 @@
 #include "WiFi_Manager.h"
 #include "LVGL_Example.h"
+#include <nvs_flash.h>
 
 WiFiManager::WiFiManager() {
     isConnected = false;
@@ -7,6 +8,20 @@ WiFiManager::WiFiManager() {
     passwordCount = 0;
     
     Serial.println("\n=== WiFi Manager Initializing ===");
+    
+    // Initialize NVS (Non-Volatile Storage)
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        Serial.println("NVS partition was truncated - erasing and reinitializing");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    
+    if (err != ESP_OK) {
+        Serial.printf("⚠️ NVS initialization failed: %s\n", esp_err_to_name(err));
+    } else {
+        Serial.println("✓ NVS initialized successfully");
+    }
     
     // Load passwords from flash (Preferences/NVS)
     loadPasswordsFromFlash();
@@ -18,13 +33,26 @@ WiFiManager::WiFiManager() {
         addPassword("aviaviavi");
         savePasswordsToFlash();
         Serial.println("Default passwords saved to flash");
+        
+        // Verify the save worked
+        Serial.println("\n=== Verifying Flash Write ===");
+        loadPasswordsFromFlash();
+        if (passwordCount > 0) {
+            Serial.println("✓ Verification successful - passwords are in flash!");
+        } else {
+            Serial.println("⚠️ Verification failed - passwords NOT saved to flash!");
+        }
     }
     
     Serial.println("=== WiFi Manager Ready ===\n");
 }
 
 void WiFiManager::loadPasswordsFromFlash() {
-    preferences.begin("wifi", true);  // Read-only mode
+    if (!preferences.begin("wifi", true)) {  // Read-only mode
+        Serial.println("⚠️ Failed to open Preferences in read mode");
+        passwordCount = 0;
+        return;
+    }
     
     passwordCount = preferences.getInt("pass_count", 0);
     
@@ -41,20 +69,25 @@ void WiFiManager::loadPasswordsFromFlash() {
 }
 
 void WiFiManager::savePasswordsToFlash() {
-    preferences.begin("wifi", false);  // Read-write mode
+    if (!preferences.begin("wifi", false)) {  // Read-write mode
+        Serial.println("⚠️ Failed to open Preferences in write mode!");
+        Serial.println("   Flash storage may not be initialized properly");
+        return;
+    }
     
     Serial.printf("Saving %d passwords to flash storage...\n", passwordCount);
     
-    preferences.putInt("pass_count", passwordCount);
+    size_t written = preferences.putInt("pass_count", passwordCount);
+    Serial.printf("  putInt returned: %d bytes\n", written);
     
     for (int i = 0; i < passwordCount; i++) {
         String key = "pass_" + String(i);
-        preferences.putString(key.c_str(), passwords[i]);
-        Serial.printf("  Saved: %s = [%s]\n", key.c_str(), passwords[i].c_str());
+        size_t size = preferences.putString(key.c_str(), passwords[i]);
+        Serial.printf("  Saved: %s = [%s] (%d bytes)\n", key.c_str(), passwords[i].c_str(), size);
     }
     
     preferences.end();
-    Serial.println("Passwords saved to flash successfully");
+    Serial.println("✓ Passwords saved to flash successfully");
 }
 
 void WiFiManager::addPassword(const String& password) {
@@ -85,13 +118,18 @@ void WiFiManager::printStoredData() {
     Serial.println("║   WiFi Flash Storage Contents         ║");
     Serial.println("╚════════════════════════════════════════╝");
     
-    preferences.begin("wifi", true);  // Read-only
+    if (!preferences.begin("wifi", true)) {  // Read-only
+        Serial.println("⚠️ ERROR: Cannot open Preferences!");
+        Serial.println("   NVS may not be initialized");
+        return;
+    }
     
     int count = preferences.getInt("pass_count", 0);
     Serial.printf("Password Count: %d\n\n", count);
     
     if (count == 0) {
         Serial.println("❌ No passwords stored in flash");
+        Serial.println("   (This is normal on first boot before passwords are saved)");
     } else {
         Serial.println("Stored Passwords:");
         for (int i = 0; i < count; i++) {
