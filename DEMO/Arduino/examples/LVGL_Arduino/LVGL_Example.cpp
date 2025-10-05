@@ -19,6 +19,7 @@ typedef enum {
  **********************/
 static void Onboard_create(lv_obj_t * parent);
 static void Music_create(lv_obj_t * parent);
+static void Hello_create(lv_obj_t * parent);
 static void color_changer_create(lv_obj_t * parent);
 
 static void color_changer_event_cb(lv_event_t * e);
@@ -68,11 +69,13 @@ void IRAM_ATTR auto_switch(lv_timer_t * t)
 {
   uint16_t page = lv_tabview_get_tab_act(tv);
 
+  // Only auto-switch from spacer tabs, not from actual content tabs
   if (page == 0) { 
-    lv_tabview_set_act(tv, 1, LV_ANIM_ON); 
-  } else if (page == 3) {
-    lv_tabview_set_act(tv, 2, LV_ANIM_ON); 
+    lv_tabview_set_act(tv, 1, LV_ANIM_ON);  // From start spacer, skip to Onboard
+  } else if (page == 4) {
+    lv_tabview_set_act(tv, 1, LV_ANIM_ON);  // From end spacer, loop back to Onboard
   }
+  // Pages 1 (Onboard), 2 (Music), 3 (Hello) are left alone - user can navigate freely
 }
 void Lvgl_Example1(void){
 
@@ -134,12 +137,14 @@ void Lvgl_Example1(void){
   lv_obj_t * t0 = lv_tabview_add_tab(tv, "       ");
   lv_obj_t * t1 = lv_tabview_add_tab(tv, "Onboard");
   lv_obj_t * t2 = lv_tabview_add_tab(tv, "music");
-  lv_obj_t * t3 = lv_tabview_add_tab(tv, "       ");
+  lv_obj_t * t3 = lv_tabview_add_tab(tv, "Hello");
+  lv_obj_t * t4 = lv_tabview_add_tab(tv, "       ");
 
   // Redirect_create1(t0);
   Onboard_create(t1);
   Music_create(t2);
-  // Redirect_create2(t3);
+  Hello_create(t3);
+  // Redirect_create2(t4);
   lv_timer_create(auto_switch, 100, NULL);
   // color_changer_create(tv);
 }
@@ -540,4 +545,44 @@ void LVGL_WiFi_Display(const char* text) {
   if (Wireless_Scan != NULL) {
     lv_textarea_set_text(Wireless_Scan, text);
   }
+}
+
+static void Hello_create(lv_obj_t * parent)
+{
+    // Set up parent grid layout
+    static lv_coord_t grid_main_col_dsc[] = {LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t grid_main_row_dsc[] = {LV_GRID_CONTENT, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(parent, grid_main_col_dsc, grid_main_row_dsc);
+
+    // Create a panel (container)
+    lv_obj_t * panel = lv_obj_create(parent);
+    lv_obj_set_height(panel, LV_SIZE_CONTENT);
+    
+    // Add a title
+    lv_obj_t * title = lv_label_create(panel);
+    lv_label_set_text(title, "Hello Tab");
+    lv_obj_add_style(title, &style_title, 0);
+    lv_obj_set_grid_cell(title, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_CENTER, 0, 1);
+    
+    // Add description label
+    lv_obj_t * desc_label = lv_label_create(panel);
+    lv_label_set_text(desc_label, "Message:");
+    lv_obj_add_style(desc_label, &style_text_muted, 0);
+    lv_obj_set_grid_cell(desc_label, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_CENTER, 1, 1);
+    
+    // Add hello world label with larger text
+    lv_obj_t * label = lv_label_create(panel);
+    lv_label_set_text(label, "Hello World!");
+    lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
+    lv_obj_set_grid_cell(label, LV_GRID_ALIGN_START, 0, 2, LV_GRID_ALIGN_CENTER, 2, 1);
+    
+    // Set up panel grid layout with proper spacing
+    static lv_coord_t grid_1_col_dsc[] = {LV_GRID_CONTENT, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t grid_1_row_dsc[] = {
+        LV_GRID_CONTENT,  // Title
+        LV_GRID_CONTENT,  // Description
+        LV_GRID_CONTENT,  // Hello World label
+        LV_GRID_TEMPLATE_LAST
+    };
+    lv_obj_set_grid_dsc_array(panel, grid_1_col_dsc, grid_1_row_dsc);
 }

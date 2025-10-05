@@ -123,29 +123,150 @@ void IRAM_ATTR auto_switch(lv_timer_t * t)
 ### Common Widgets Used in Tabs
 
 #### 1. Labels (Static Text)
+Labels are the most basic widget for displaying text.
+
+**Basic Label:**
 ```cpp
 lv_obj_t * label = lv_label_create(parent);
 lv_label_set_text(label, "Your Text");
 lv_obj_add_style(label, &style_text_muted, 0);  // Apply muted text style
 ```
 
+**Dynamic Text with Formatting:**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_text_fmt(label, "Value: %d", 42);  // Printf-style formatting
+```
+
+**Label with Word Wrap:**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);  // Wrap long text
+lv_obj_set_width(label, 150);  // Set width to enable wrapping
+lv_label_set_text(label, "This is a long text that will wrap to multiple lines");
+```
+
+**Label with Text Alignment:**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_text(label, "Centered Text");
+lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+```
+
+**Label with Color Codes (Re-coloring):**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_recolor(label, true);  // Enable re-coloring
+lv_label_set_text(label, "#ff0000 Red# #00ff00 Green# #0000ff Blue#");
+```
+
+**Scrolling Label:**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR);  // Circular scroll
+lv_obj_set_width(label, 150);
+lv_label_set_text(label, "This text will scroll continuously. ");
+```
+
+**Label with Custom Font:**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_text(label, "Large Text");
+lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
+```
+
+**Label Positioning:**
+```cpp
+lv_obj_t * label = lv_label_create(parent);
+lv_label_set_text(label, "Centered");
+lv_obj_center(label);  // Center in parent
+
+lv_obj_align(label, LV_ALIGN_TOP_LEFT, 10, 10);  // Position relative to parent
+lv_obj_align_to(label, other_widget, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);  // Relative to another widget
+```
+
 #### 2. Text Areas (Editable/Display Fields)
+Text areas can be used as input fields or display-only fields.
+
+**Single-Line Display Field (Read-Only):**
 ```cpp
 lv_obj_t * textarea = lv_textarea_create(parent);
 lv_textarea_set_one_line(textarea, true);
 lv_textarea_set_placeholder_text(textarea, "Placeholder");
 lv_textarea_set_text(textarea, "Content");  // Update content later
+lv_obj_add_event_cb(textarea, ta_event_cb, LV_EVENT_ALL, NULL);
+```
+
+**Multi-Line Text Area:**
+```cpp
+lv_obj_t * textarea = lv_textarea_create(parent);
+lv_obj_set_size(textarea, 200, 100);
+lv_textarea_set_text(textarea, "Line 1\nLine 2\nLine 3");
+```
+
+**Editable Text Input:**
+```cpp
+lv_obj_t * textarea = lv_textarea_create(parent);
+lv_textarea_set_one_line(textarea, true);
+lv_obj_add_state(textarea, LV_STATE_FOCUSED);  // Show cursor
+lv_obj_add_event_cb(textarea, textarea_event_cb, LV_EVENT_READY, NULL);
+
+// Get text from textarea
+const char * text = lv_textarea_get_text(textarea);
 ```
 
 #### 3. Buttons
+Buttons can be simple click targets or toggle buttons.
+
+**Basic Button:**
 ```cpp
 lv_obj_t * btn = lv_btn_create(parent);
+lv_obj_set_size(btn, 120, 50);
 lv_obj_t * btn_label = lv_label_create(btn);
 lv_label_set_text(btn_label, "Click Me");
+lv_obj_center(btn_label);
 lv_obj_add_event_cb(btn, button_event_cb, LV_EVENT_CLICKED, NULL);
 ```
 
+**Toggle Button:**
+```cpp
+lv_obj_t * btn = lv_btn_create(parent);
+lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);  // Make it toggleable
+lv_obj_set_height(btn, LV_SIZE_CONTENT);
+lv_obj_t * label = lv_label_create(btn);
+lv_label_set_text(label, "Toggle");
+lv_obj_center(label);
+lv_obj_add_event_cb(btn, button_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+```
+
+**Floating Button (Always on Top):**
+```cpp
+lv_obj_t * btn = lv_btn_create(parent);
+lv_obj_add_flag(btn, LV_OBJ_FLAG_FLOATING | LV_OBJ_FLAG_CLICKABLE);
+lv_obj_align(btn, LV_ALIGN_BOTTOM_RIGHT, -15, -15);
+lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, 0);  // Circular button
+lv_obj_set_size(btn, 50, 50);
+```
+
+**Button with Counter Example:**
+```cpp
+static void btn_event_cb(lv_event_t * e)
+{
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
+        static uint8_t cnt = 0;
+        cnt++;
+        
+        lv_obj_t * btn = lv_event_get_target(e);
+        lv_obj_t * label = lv_obj_get_child(btn, 0);  // Get button's label
+        lv_label_set_text_fmt(label, "Count: %d", cnt);
+    }
+}
+```
+
 #### 4. Sliders
+Sliders for numeric input/adjustment.
+
+**Basic Slider:**
 ```cpp
 lv_obj_t * slider = lv_slider_create(parent);
 lv_obj_set_size(slider, 200, 35);
@@ -154,25 +275,109 @@ lv_slider_set_value(slider, 50, LV_ANIM_ON);
 lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
 ```
 
+**Slider with Value Display:**
+```cpp
+static lv_obj_t * slider_label;
+
+static void slider_event_cb(lv_event_t * e)
+{
+    lv_obj_t * slider = lv_event_get_target(e);
+    int value = lv_slider_get_value(slider);
+    
+    char buf[8];
+    lv_snprintf(buf, sizeof(buf), "%d%%", value);
+    lv_label_set_text(slider_label, buf);
+}
+
+// In create function:
+lv_obj_t * slider = lv_slider_create(parent);
+lv_obj_center(slider);
+lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+slider_label = lv_label_create(parent);
+lv_label_set_text(slider_label, "0%");
+lv_obj_align_to(slider_label, slider, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
+```
+
+**Customized Slider (from Onboard example):**
+```cpp
+lv_obj_t * slider = lv_slider_create(parent);
+lv_obj_add_flag(slider, LV_OBJ_FLAG_CLICKABLE);
+lv_obj_set_size(slider, 200, 35);
+lv_obj_set_style_radius(slider, 3, LV_PART_KNOB);
+lv_obj_set_style_bg_opa(slider, LV_OPA_TRANSP, LV_PART_KNOB);
+lv_obj_set_style_bg_color(slider, lv_color_hex(0xAAAAAA), LV_PART_KNOB);
+lv_obj_set_style_bg_color(slider, lv_color_hex(0xFFFFFF), LV_PART_INDICATOR);
+lv_obj_set_style_outline_width(slider, 2, LV_PART_INDICATOR);
+lv_obj_set_style_outline_color(slider, lv_color_hex(0xD3D3D3), LV_PART_INDICATOR);
+lv_slider_set_range(slider, 5, 100);
+lv_slider_set_value(slider, 50, LV_ANIM_ON);
+```
+
 #### 5. Switches
+Toggle switches for on/off states.
+
 ```cpp
 lv_obj_t * sw = lv_switch_create(parent);
 lv_obj_add_event_cb(sw, switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+// Check state
+if(lv_obj_has_state(sw, LV_STATE_CHECKED)) {
+    // Switch is ON
+} else {
+    // Switch is OFF
+}
 ```
 
 #### 6. Checkboxes
+Checkboxes with integrated labels.
+
 ```cpp
 lv_obj_t * cb = lv_checkbox_create(parent);
 lv_checkbox_set_text(cb, "Enable Feature");
+lv_obj_add_event_cb(cb, checkbox_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
 ```
 
 #### 7. Arcs (Circular Progress/Input)
+Perfect for circular displays like this ESP32-S3.
+
 ```cpp
 lv_obj_t * arc = lv_arc_create(parent);
 lv_arc_set_range(arc, 0, 100);
 lv_arc_set_value(arc, 50);
 lv_arc_set_rotation(arc, 135);
 lv_arc_set_bg_angles(arc, 0, 270);
+lv_obj_center(arc);
+```
+
+#### 8. Dropdown Menus
+```cpp
+lv_obj_t * dropdown = lv_dropdown_create(parent);
+lv_dropdown_set_options(dropdown, "Option 1\nOption 2\nOption 3");
+lv_obj_add_event_cb(dropdown, dropdown_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+// Get selected option
+uint16_t selected = lv_dropdown_get_selected(dropdown);
+```
+
+#### 9. Button Matrix (Keyboard-like Grid)
+Useful for creating custom keyboards or control panels.
+
+```cpp
+static const char * btnm_map[] = {
+    "1", "2", "3", "\n",
+    "4", "5", "6", "\n",
+    "7", "8", "9", "\n",
+    "Clear", "0", "OK", ""
+};
+
+lv_obj_t * btnm = lv_btnmatrix_create(parent);
+lv_obj_set_size(btnm, 200, 150);
+lv_btnmatrix_set_map(btnm, btnm_map);
+lv_obj_add_event_cb(btnm, btnm_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+// In event handler:
+const char * txt = lv_btnmatrix_get_btn_text(obj, lv_btnmatrix_get_selected_btn(obj));
 ```
 
 ---
@@ -212,6 +417,223 @@ void Update_MyApp_Display(const char* text) {
 
 ---
 
+## Object Positioning and Alignment
+
+### Alignment Options
+
+LVGL provides flexible alignment options for positioning widgets.
+
+**Align to Parent:**
+```cpp
+lv_obj_align(obj, LV_ALIGN_CENTER, x_offset, y_offset);
+```
+
+**Available Alignments:**
+- `LV_ALIGN_CENTER` - Center of parent
+- `LV_ALIGN_TOP_LEFT`, `LV_ALIGN_TOP_MID`, `LV_ALIGN_TOP_RIGHT`
+- `LV_ALIGN_LEFT_MID`, `LV_ALIGN_RIGHT_MID`
+- `LV_ALIGN_BOTTOM_LEFT`, `LV_ALIGN_BOTTOM_MID`, `LV_ALIGN_BOTTOM_RIGHT`
+
+**Align Relative to Another Object:**
+```cpp
+lv_obj_align_to(obj, reference_obj, LV_ALIGN_OUT_BOTTOM_MID, x_offset, y_offset);
+```
+
+**Available Relative Alignments:**
+- `LV_ALIGN_OUT_TOP_LEFT`, `LV_ALIGN_OUT_TOP_MID`, `LV_ALIGN_OUT_TOP_RIGHT`
+- `LV_ALIGN_OUT_BOTTOM_LEFT`, `LV_ALIGN_OUT_BOTTOM_MID`, `LV_ALIGN_OUT_BOTTOM_RIGHT`
+- `LV_ALIGN_OUT_LEFT_TOP`, `LV_ALIGN_OUT_LEFT_MID`, `LV_ALIGN_OUT_LEFT_BOTTOM`
+- `LV_ALIGN_OUT_RIGHT_TOP`, `LV_ALIGN_OUT_RIGHT_MID`, `LV_ALIGN_OUT_RIGHT_BOTTOM`
+
+**Set Position and Size:**
+```cpp
+lv_obj_set_pos(obj, x, y);           // Set position
+lv_obj_set_x(obj, x);                // Set X only
+lv_obj_set_y(obj, y);                // Set Y only
+lv_obj_set_size(obj, width, height); // Set size
+lv_obj_set_width(obj, width);        // Set width only
+lv_obj_set_height(obj, height);      // Set height only
+```
+
+**Special Size Values:**
+```cpp
+lv_obj_set_height(obj, LV_SIZE_CONTENT);  // Size to content
+lv_obj_set_width(obj, LV_PCT(50));        // 50% of parent width
+```
+
+---
+
+## Grid Layout Advanced
+
+### Positioning Objects in Grid Cells
+
+After setting up a grid, assign widgets to specific cells:
+
+```cpp
+lv_obj_set_grid_cell(obj, 
+    LV_GRID_ALIGN_START,  // Column alignment
+    0,                     // Column position
+    2,                     // Column span
+    LV_GRID_ALIGN_CENTER,  // Row alignment
+    1,                     // Row position
+    1);                    // Row span
+```
+
+**Grid Cell Parameters:**
+1. Column alignment: `LV_GRID_ALIGN_START`, `LV_GRID_ALIGN_CENTER`, `LV_GRID_ALIGN_END`, `LV_GRID_ALIGN_STRETCH`
+2. Column position: 0-based index
+3. Column span: number of columns to occupy
+4. Row alignment: same options as column alignment
+5. Row position: 0-based index
+6. Row span: number of rows to occupy
+
+**Example - Label Spanning Multiple Columns:**
+```cpp
+static lv_coord_t grid_col_dsc[] = {100, 100, 100, LV_GRID_TEMPLATE_LAST};
+static lv_coord_t grid_row_dsc[] = {50, 50, LV_GRID_TEMPLATE_LAST};
+lv_obj_set_grid_dsc_array(panel, grid_col_dsc, grid_row_dsc);
+
+lv_obj_t * title = lv_label_create(panel);
+lv_label_set_text(title, "Wide Title");
+lv_obj_set_grid_cell(title, LV_GRID_ALIGN_CENTER, 0, 3, LV_GRID_ALIGN_CENTER, 0, 1);
+// Spans all 3 columns in row 0
+```
+
+---
+
+## Animations
+
+### Using Animations
+
+Animations make the UI feel responsive and professional.
+
+**Simple Animation Example (from color_changer):**
+```cpp
+static void animate_width(lv_obj_t * obj, int32_t start_val, int32_t end_val)
+{
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, obj);
+    lv_anim_set_exec_cb(&a, anim_width_cb);  // Callback to execute
+    lv_anim_set_values(&a, start_val, end_val);
+    lv_anim_set_time(&a, 200);  // Duration in ms
+    lv_anim_start(&a);
+}
+
+// Animation callback - called for each frame
+static void anim_width_cb(void * var, int32_t v)
+{
+    lv_obj_set_width((lv_obj_t *)var, v);
+}
+```
+
+**Built-in Animation Easings:**
+- `lv_anim_path_linear` - Constant speed
+- `lv_anim_path_ease_in` - Slow start
+- `lv_anim_path_ease_out` - Slow end
+- `lv_anim_path_ease_in_out` - Slow start and end
+- `lv_anim_path_bounce` - Bounce effect
+
+**Animation with Easing:**
+```cpp
+lv_anim_t a;
+lv_anim_init(&a);
+lv_anim_set_var(&a, obj);
+lv_anim_set_exec_cb(&a, anim_cb);
+lv_anim_set_values(&a, 0, 100);
+lv_anim_set_time(&a, 500);
+lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
+lv_anim_start(&a);
+```
+
+**Delete All Animations:**
+```cpp
+lv_anim_del(NULL, NULL);  // Delete all animations
+lv_anim_del(obj, NULL);   // Delete animations for specific object
+```
+
+---
+
+## Drawing and Canvas
+
+### Canvas Widget for Custom Graphics
+
+For custom graphics, use the canvas widget:
+
+```cpp
+#define CANVAS_WIDTH  200
+#define CANVAS_HEIGHT 150
+
+// Buffer for canvas (must be static or global)
+static lv_color_t canvas_buffer[CANVAS_WIDTH * CANVAS_HEIGHT];
+
+lv_obj_t * canvas = lv_canvas_create(parent);
+lv_canvas_set_buffer(canvas, canvas_buffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_IMG_CF_TRUE_COLOR);
+lv_obj_center(canvas);
+
+// Draw on canvas
+lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER);
+lv_canvas_draw_rect(canvas, 10, 10, 50, 30, lv_color_black());
+lv_canvas_draw_line(canvas, 0, 0, 100, 100, lv_color_red());
+lv_canvas_draw_text(canvas, 20, 20, 100, "Hello", lv_color_blue());
+```
+
+**Canvas Drawing Functions:**
+- `lv_canvas_fill_bg()` - Fill background
+- `lv_canvas_draw_rect()` - Draw rectangle
+- `lv_canvas_draw_line()` - Draw line
+- `lv_canvas_draw_arc()` - Draw arc
+- `lv_canvas_draw_polygon()` - Draw polygon
+- `lv_canvas_draw_text()` - Draw text
+
+---
+
+## Object Flags and States
+
+### Object Flags
+
+Control object behavior with flags:
+
+```cpp
+lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);    // Make clickable
+lv_obj_add_flag(obj, LV_OBJ_FLAG_FLOATING);     // Float above other objects
+lv_obj_add_flag(obj, LV_OBJ_FLAG_CHECKABLE);    // Toggle state
+lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);       // Hide object
+
+lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);  // Remove flag
+```
+
+**Common Flags:**
+- `LV_OBJ_FLAG_CLICKABLE` - Can be clicked
+- `LV_OBJ_FLAG_CHECKABLE` - Toggle button behavior
+- `LV_OBJ_FLAG_HIDDEN` - Hidden from view
+- `LV_OBJ_FLAG_FLOATING` - Stays on top
+- `LV_OBJ_FLAG_SCROLLABLE` - Can scroll content
+- `LV_OBJ_FLAG_SCROLL_ON_FOCUS` - Auto-scroll when focused
+- `LV_OBJ_FLAG_CLICK_FOCUSABLE` - Can gain focus on click
+
+### Object States
+
+Objects can have different visual states:
+
+```cpp
+lv_obj_add_state(obj, LV_STATE_CHECKED);    // Add checked state
+lv_obj_clear_state(obj, LV_STATE_CHECKED);  // Remove state
+
+if(lv_obj_has_state(obj, LV_STATE_CHECKED)) {
+    // Object is checked
+}
+```
+
+**Common States:**
+- `LV_STATE_DEFAULT` - Normal state
+- `LV_STATE_CHECKED` - Toggled/selected
+- `LV_STATE_FOCUSED` - Has focus (touch/cursor)
+- `LV_STATE_PRESSED` - Being pressed
+- `LV_STATE_DISABLED` - Disabled/grayed out
+
+---
+
 ## Event Handling
 
 ### Creating Event Callbacks
@@ -232,13 +654,72 @@ static void my_button_event_cb(lv_event_t * e)
 ```
 
 ### Common Event Types
+
 - `LV_EVENT_CLICKED` - Button/object clicked
 - `LV_EVENT_VALUE_CHANGED` - Slider, switch, or arc value changed
 - `LV_EVENT_FOCUSED` - Widget gained focus (touch)
 - `LV_EVENT_DEFOCUSED` - Widget lost focus
 - `LV_EVENT_PRESSED` - Object pressed down
 - `LV_EVENT_RELEASED` - Object released
+- `LV_EVENT_READY` - Input finished (e.g., Enter pressed in textarea)
 - `LV_EVENT_ALL` - Listen to all events
+
+### Event Data and User Data
+
+**Passing Custom Data to Event Handler:**
+```cpp
+// Pass pointer to data as user_data
+int my_value = 42;
+lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_CLICKED, &my_value);
+
+// Retrieve in callback
+static void btn_event_cb(lv_event_t * e)
+{
+    int * value = (int *)lv_event_get_user_data(e);
+    Serial.printf("User data value: %d\n", *value);
+}
+```
+
+**Getting Information from Event:**
+```cpp
+static void event_handler(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);      // What happened
+    lv_obj_t * obj = lv_event_get_target(e);           // Widget that triggered event
+    lv_obj_t * current = lv_event_get_current_target(e); // Current handler target
+    void * user_data = lv_event_get_user_data(e);     // Custom data
+}
+```
+
+**Getting Widget Values:**
+```cpp
+// Slider
+int value = lv_slider_get_value(slider);
+
+// Switch/Checkbox
+bool is_checked = lv_obj_has_state(obj, LV_STATE_CHECKED);
+
+// Textarea
+const char * text = lv_textarea_get_text(textarea);
+
+// Dropdown
+uint16_t selected = lv_dropdown_get_selected(dropdown);
+char buf[32];
+lv_dropdown_get_selected_str(dropdown, buf, sizeof(buf));
+
+// Button matrix
+uint16_t btn_id = lv_btnmatrix_get_selected_btn(btnm);
+const char * btn_text = lv_btnmatrix_get_btn_text(btnm, btn_id);
+```
+
+**Accessing Child Widgets:**
+```cpp
+// Get first child (e.g., label inside button)
+lv_obj_t * child = lv_obj_get_child(parent, 0);
+
+// Get parent
+lv_obj_t * parent = lv_obj_get_parent(obj);
+```
 
 ---
 
@@ -490,6 +971,281 @@ static void MotorControl_create(lv_obj_t * parent)
     };
     lv_obj_set_grid_dsc_array(panel, grid_col_dsc, grid_row_dsc);
 }
+```
+
+---
+
+## Timers for Periodic Updates
+
+### LVGL Timers
+
+LVGL timers let you update widgets periodically without blocking.
+
+**Create a Timer:**
+```cpp
+// Timer function signature
+void IRAM_ATTR my_timer_cb(lv_timer_t * timer)
+{
+    // Update your widgets here
+    static int counter = 0;
+    counter++;
+    
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Count: %d", counter);
+    if (My_Label != NULL) {
+        lv_label_set_text(My_Label, buf);
+    }
+}
+
+// In setup or tab create function
+lv_timer_t * my_timer = lv_timer_create(my_timer_cb, 1000, NULL);  // 1000ms = 1 second
+```
+
+**Timer with User Data:**
+```cpp
+typedef struct {
+    lv_obj_t * label;
+    int max_value;
+} timer_data_t;
+
+void IRAM_ATTR timer_cb(lv_timer_t * timer)
+{
+    timer_data_t * data = (timer_data_t *)timer->user_data;
+    // Use data->label and data->max_value
+}
+
+// Create timer with data
+static timer_data_t my_data = {.label = my_label, .max_value = 100};
+lv_timer_t * timer = lv_timer_create(timer_cb, 500, &my_data);
+```
+
+**Timer Control:**
+```cpp
+lv_timer_pause(timer);      // Pause timer
+lv_timer_resume(timer);     // Resume timer
+lv_timer_del(timer);        // Delete timer
+lv_timer_reset(timer);      // Reset timer period
+
+// Change period
+lv_timer_set_period(timer, 2000);  // Change to 2 seconds
+```
+
+**One-Shot Timer:**
+```cpp
+lv_timer_t * timer = lv_timer_create(my_callback, 3000, NULL);
+lv_timer_set_repeat_count(timer, 1);  // Run only once
+```
+
+### Updating Widgets from Main Loop
+
+You can also update widgets from your main Arduino loop or FreeRTOS tasks:
+
+```cpp
+// In LVGL_Arduino.ino or main loop
+void loop() {
+    // Your sensor reading
+    float temperature = readSensor();
+    
+    // Update display (must be thread-safe)
+    Update_Temperature_Display(temperature);
+    
+    delay(1000);
+}
+
+// In LVGL_Example.cpp
+void Update_Temperature_Display(float temp) {
+    if (Temp_Display != NULL) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.1f °C", temp);
+        lv_textarea_set_text(Temp_Display, buf);
+    }
+}
+```
+
+**Thread Safety Note:** When updating LVGL widgets from Arduino loop or other tasks, ensure you're calling LVGL functions within the LVGL task context or use appropriate locking mechanisms.
+
+---
+
+## Color and Opacity
+
+### Color Formats
+
+**Hex Colors:**
+```cpp
+lv_color_t color = lv_color_hex(0xFF5733);  // RGB hex
+lv_color_t red = lv_color_hex(0xFF0000);
+lv_color_t green = lv_color_hex(0x00FF00);
+lv_color_t blue = lv_color_hex(0x0000FF);
+```
+
+**Named Colors:**
+```cpp
+lv_color_t white = lv_color_white();
+lv_color_t black = lv_color_black();
+```
+
+**Palette Colors:**
+```cpp
+lv_color_t color = lv_palette_main(LV_PALETTE_RED);
+lv_color_t lighter = lv_palette_lighten(LV_PALETTE_RED, 1);
+lv_color_t darker = lv_palette_darken(LV_PALETTE_RED, 1);
+```
+
+**Available Palettes:**
+`LV_PALETTE_RED`, `LV_PALETTE_PINK`, `LV_PALETTE_PURPLE`, `LV_PALETTE_DEEP_PURPLE`, `LV_PALETTE_INDIGO`, `LV_PALETTE_BLUE`, `LV_PALETTE_LIGHT_BLUE`, `LV_PALETTE_CYAN`, `LV_PALETTE_TEAL`, `LV_PALETTE_GREEN`, `LV_PALETTE_LIGHT_GREEN`, `LV_PALETTE_LIME`, `LV_PALETTE_YELLOW`, `LV_PALETTE_AMBER`, `LV_PALETTE_ORANGE`, `LV_PALETTE_DEEP_ORANGE`, `LV_PALETTE_BROWN`, `LV_PALETTE_GREY`, `LV_PALETTE_BLUE_GREY`
+
+**RGB Components:**
+```cpp
+lv_color_t color = lv_color_make(255, 128, 64);  // R, G, B
+```
+
+### Opacity (Alpha)
+
+Opacity values range from 0 (transparent) to 255 (opaque):
+
+```cpp
+lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);    // 100% opaque (255)
+lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);   // 0% opaque (0)
+lv_obj_set_style_bg_opa(obj, LV_OPA_90, 0);       // 90% opaque
+lv_obj_set_style_bg_opa(obj, LV_OPA_50, 0);       // 50% opaque
+lv_obj_set_style_bg_opa(obj, 200, 0);             // Custom (0-255)
+```
+
+**Opacity Constants:**
+- `LV_OPA_TRANSP` = 0
+- `LV_OPA_10` to `LV_OPA_90` (10% increments)
+- `LV_OPA_COVER` = 255
+
+---
+
+## Symbols and Icons
+
+### Built-in Symbols
+
+LVGL includes many built-in symbols that work with any font:
+
+```cpp
+lv_label_set_text(label, LV_SYMBOL_HOME " Home");
+lv_label_set_text(label, LV_SYMBOL_SETTINGS " Settings");
+lv_label_set_text(label, LV_SYMBOL_OK " Confirm");
+```
+
+**Commonly Used Symbols:**
+- `LV_SYMBOL_AUDIO` - 🔊
+- `LV_SYMBOL_VIDEO` - 🎬
+- `LV_SYMBOL_LIST` - ☰
+- `LV_SYMBOL_OK` - ✓
+- `LV_SYMBOL_CLOSE` - ✕
+- `LV_SYMBOL_POWER` - ⏻
+- `LV_SYMBOL_SETTINGS` - ⚙
+- `LV_SYMBOL_HOME` - 🏠
+- `LV_SYMBOL_DOWNLOAD` - ⬇
+- `LV_SYMBOL_UPLOAD` - ⬆
+- `LV_SYMBOL_DRIVE` - 💾
+- `LV_SYMBOL_REFRESH` - ⟳
+- `LV_SYMBOL_MUTE` - 🔇
+- `LV_SYMBOL_VOLUME_MID` - 🔉
+- `LV_SYMBOL_VOLUME_MAX` - 🔊
+- `LV_SYMBOL_IMAGE` - 🖼
+- `LV_SYMBOL_EDIT` - ✎
+- `LV_SYMBOL_PREV` - ◀
+- `LV_SYMBOL_PLAY` - ▶
+- `LV_SYMBOL_PAUSE` - ⏸
+- `LV_SYMBOL_STOP` - ⏹
+- `LV_SYMBOL_NEXT` - ▶▶
+- `LV_SYMBOL_BATTERY_FULL` - 🔋
+- `LV_SYMBOL_BATTERY_3` - 🔋 (75%)
+- `LV_SYMBOL_BATTERY_2` - 🔋 (50%)
+- `LV_SYMBOL_BATTERY_1` - 🔋 (25%)
+- `LV_SYMBOL_BATTERY_EMPTY` - 🔋 (0%)
+- `LV_SYMBOL_BLUETOOTH` - 
+- `LV_SYMBOL_GPS` - 
+- `LV_SYMBOL_WIFI` - 📶
+- `LV_SYMBOL_WARNING` - ⚠
+- `LV_SYMBOL_BELL` - 🔔
+- `LV_SYMBOL_BACKSPACE` - ⌫
+- `LV_SYMBOL_NEW_LINE` - ⏎
+
+**Using in Buttons:**
+```cpp
+lv_obj_t * btn = lv_btn_create(parent);
+lv_obj_set_style_bg_img_src(btn, LV_SYMBOL_SETTINGS, 0);
+```
+
+---
+
+## Practical Tips
+
+### Memory Management
+
+**Static Variables for Grid Layouts:**
+Always use `static` for grid descriptors to prevent stack issues:
+```cpp
+static lv_coord_t grid_col_dsc[] = {...};  // ✓ Correct
+lv_coord_t grid_col_dsc[] = {...};          // ✗ Wrong - will crash!
+```
+
+**Buffer for Canvas:**
+Canvas buffers must be static or global:
+```cpp
+static lv_color_t canvas_buf[WIDTH * HEIGHT];  // ✓ Correct
+```
+
+### Performance Optimization
+
+**Minimize Redraws:**
+```cpp
+// Batch updates
+lv_obj_invalidate(obj);  // Mark for redraw, but don't draw yet
+// ... make multiple changes ...
+lv_refr_now(NULL);  // Force redraw now
+```
+
+**Use Double Buffering:**
+Already enabled in the driver configuration for smooth animations.
+
+### Debugging
+
+**Enable LVGL Logging:**
+In `lv_conf.h`:
+```c
+#define LV_USE_LOG 1
+#define LV_LOG_LEVEL LV_LOG_LEVEL_TRACE
+```
+
+**Print Widget Info:**
+```cpp
+Serial.printf("Widget width: %d, height: %d\n", 
+    lv_obj_get_width(obj), lv_obj_get_height(obj));
+Serial.printf("Widget x: %d, y: %d\n", 
+    lv_obj_get_x(obj), lv_obj_get_y(obj));
+```
+
+### Touch Coordinates
+
+**Get Touch Position:**
+```cpp
+static void touch_event_cb(lv_event_t * e)
+{
+    lv_indev_t * indev = lv_indev_get_act();
+    lv_point_t point;
+    lv_indev_get_point(indev, &point);
+    Serial.printf("Touch at x:%d, y:%d\n", point.x, point.y);
+}
+```
+
+### Text Formatting
+
+**Safe String Formatting:**
+```cpp
+char buf[32];
+lv_snprintf(buf, sizeof(buf), "Value: %d", value);  // Use lv_snprintf
+lv_label_set_text(label, buf);
+```
+
+**Dynamic Text Updates:**
+```cpp
+lv_label_set_text_fmt(label, "Temp: %.1f°C", temperature);  // Direct formatting
 ```
 
 ---

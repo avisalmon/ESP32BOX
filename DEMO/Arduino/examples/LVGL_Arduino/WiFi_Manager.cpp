@@ -51,58 +51,75 @@ bool WiFiManager::connectToBestNetwork() {
                       WiFi.channel(i), WiFi.encryptionType(i));
     }
     
-    // Prioritize network from config - move it to the front if found
-    const char* prioritySSID = WIFI_PRIORITY_SSID;
-    int priorityIndex = -1;
+    // Define priority networks to try in order
+    const char* priorityNetworks[] = {"Hot1", "AviRedmi"};
+    const int priorityCount = 2;
+    int priorityIndices[priorityCount];
     
-    for (int i = 0; i < n; i++) {
-        if (WiFi.SSID(i).equalsIgnoreCase(prioritySSID)) {
-            priorityIndex = i;
-            Serial.printf("\n*** Priority network '%s' found at position %d - will try first! ***\n", prioritySSID, i+1);
-            break;
+    // Find priority networks in scan results
+    for (int p = 0; p < priorityCount; p++) {
+        priorityIndices[p] = -1;
+        for (int i = 0; i < n; i++) {
+            if (WiFi.SSID(i).equalsIgnoreCase(priorityNetworks[p])) {
+                priorityIndices[p] = i;
+                Serial.printf("\n*** Priority network #%d '%s' found at position %d ***\n", 
+                              p+1, priorityNetworks[p], i+1);
+                break;
+            }
         }
     }
     
-    Serial.printf("\n=== Trying passwords on %d networks (Hot1 prioritized) ===\n", n);
+    Serial.printf("\n=== Trying passwords on %d networks (Hot1 → AviRedmi → others) ===\n", n);
     
-    // Try Hot1 first if found
-    if (priorityIndex >= 0) {
-        String ssid = WiFi.SSID(priorityIndex);
-        int8_t rssi = WiFi.RSSI(priorityIndex);
+    // Try priority networks in order
+    for (int p = 0; p < priorityCount; p++) {
+        int priorityIndex = priorityIndices[p];
         
-        Serial.printf("\n--- PRIORITY Network: %s (%d dBm) ---\n", ssid.c_str(), rssi);
-        
-        // Try each password on Hot1
-        for (int p = 0; p < passwordCount; p++) {
-            char displayBuf[50];
-            snprintf(displayBuf, sizeof(displayBuf), "Try %s [%d/%d]", ssid.c_str(), p+1, passwordCount);
-            LVGL_WiFi_Display(displayBuf);
+        if (priorityIndex >= 0) {
+            String ssid = WiFi.SSID(priorityIndex);
+            int8_t rssi = WiFi.RSSI(priorityIndex);
             
-            Serial.printf("  Attempt %d/%d: Trying password '%s'...\n", p+1, passwordCount, passwords[p].c_str());
+            Serial.printf("\n--- PRIORITY #%d Network: %s (%d dBm) ---\n", p+1, ssid.c_str(), rssi);
             
-            if (connectToNetwork(ssid.c_str(), passwords[p].c_str())) {
-                snprintf(displayBuf, sizeof(displayBuf), "WiFi: %s", ssid.c_str());
+            // Try each password on this priority network
+            for (int pw = 0; pw < passwordCount; pw++) {
+                char displayBuf[50];
+                snprintf(displayBuf, sizeof(displayBuf), "Try %s [%d/%d]", ssid.c_str(), pw+1, passwordCount);
                 LVGL_WiFi_Display(displayBuf);
-                Serial.println("\n*** SUCCESS! ***");
-                Serial.printf("Connected to: %s\n", ssid.c_str());
-                Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
-                Serial.printf("Signal strength: %d dBm\n", WiFi.RSSI());
-                Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
-                Serial.printf("DNS: %s\n", WiFi.dnsIP().toString().c_str());
-                Serial.println("=== WiFi Connected ===\n");
-                return true;
-            } else {
-                Serial.println("  FAILED - wrong password or connection issue");
+                
+                Serial.printf("  Attempt %d/%d: Trying password '%s'...\n", pw+1, passwordCount, passwords[pw].c_str());
+                
+                if (connectToNetwork(ssid.c_str(), passwords[pw].c_str())) {
+                    snprintf(displayBuf, sizeof(displayBuf), "WiFi: %s", ssid.c_str());
+                    LVGL_WiFi_Display(displayBuf);
+                    Serial.println("\n*** SUCCESS! ***");
+                    Serial.printf("Connected to: %s\n", ssid.c_str());
+                    Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
+                    Serial.printf("Signal strength: %d dBm\n", WiFi.RSSI());
+                    Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
+                    Serial.printf("DNS: %s\n", WiFi.dnsIP().toString().c_str());
+                    Serial.println("=== WiFi Connected ===\n");
+                    return true;
+                } else {
+                    Serial.println("  FAILED - wrong password or connection issue");
+                }
             }
+            
+            Serial.printf("%s connection failed, trying next priority network...\n\n", ssid.c_str());
         }
-        
-        Serial.println("Hot1 connection failed, trying other networks...\n");
     }
     
     // Try remaining networks from strongest to weakest
     for (int i = 0; i < n; i++) {
-        // Skip Hot1 if we already tried it
-        if (i == priorityIndex) {
+        // Skip priority networks if we already tried them
+        bool isPriority = false;
+        for (int p = 0; p < priorityCount; p++) {
+            if (i == priorityIndices[p]) {
+                isPriority = true;
+                break;
+            }
+        }
+        if (isPriority) {
             continue;
         }
         String ssid = WiFi.SSID(i);
