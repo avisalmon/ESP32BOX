@@ -23,9 +23,19 @@ void Driver_Loop(void *parameter)
   Serial.println("Driver_Loop task started");
   Serial.println("Waiting 5 seconds for system to stabilize...");
   vTaskDelay(pdMS_TO_TICKS(5000));  // Wait 5 seconds for any old tasks to complete
+  
+  // Print stored WiFi data from flash
+  Serial.println("\n=== READING FLASH STORAGE ===");
+  wifiManager.printStoredData();
+  Serial.println("=== FLASH STORAGE READ COMPLETE ===\n");
+  
   Serial.println("Starting WiFi Manager...");
   wifiConnected = wifiManager.connectToBestNetwork();
   Serial.printf("\n=== WiFi connection result: %s ===\n", wifiConnected ? "SUCCESS" : "FAILED");
+  
+  // Print status after connection attempt
+  Serial.println("\n=== POST-CONNECTION STATUS ===");
+  wifiManager.printStoredData();
   
   while(1)
   {

@@ -1,0 +1,55 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                    WiFi_Config.h DEPRECATED                   ║
+╚═══════════════════════════════════════════════════════════════╝
+
+This file is no longer used!
+
+WiFi passwords are now stored in FLASH MEMORY using the 
+Preferences library (NVS - Non-Volatile Storage).
+
+═══════════════════════════════════════════════════════════════
+
+HOW IT WORKS NOW:
+
+1. On first boot, default passwords are automatically stored in flash
+2. Passwords persist across reboots
+3. No need for WiFi_Config.h file
+4. Passwords are NOT in git repository
+
+═══════════════════════════════════════════════════════════════
+
+TO CHANGE DEFAULT PASSWORDS:
+
+Edit WiFi_Manager.cpp, line ~18:
+    addPassword("10203040");    // Your first password
+    addPassword("aviaviavi");   // Your second password
+
+═══════════════════════════════════════════════════════════════
+
+TO ADD/REMOVE PASSWORDS AT RUNTIME:
+
+From your code:
+    wifiManager.addPassword("newpassword");
+    wifiManager.clearPasswords();  // Remove all
+
+═══════════════════════════════════════════════════════════════
+
+TO VIEW STORED PASSWORDS:
+
+Call from your code:
+    wifiManager.printStoredData();
+
+Or view in Serial Monitor on startup!
+
+═══════════════════════════════════════════════════════════════
+
+ADVANTAGES:
+✅ Passwords stored in encrypted flash (NVS)
+✅ No sensitive data in git
+✅ Can be changed without recompiling
+✅ Survives firmware updates (if flash not erased)
+✅ Easy to manage multiple networks
+
+═══════════════════════════════════════════════════════════════
+
+See FLASH_STORAGE_GUIDE.md for more information.

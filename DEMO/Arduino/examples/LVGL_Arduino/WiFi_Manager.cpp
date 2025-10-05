@@ -1,17 +1,119 @@
 #include "WiFi_Manager.h"
 #include "LVGL_Example.h"
-#include "WiFi_Config.h"  // Local config file with passwords (not in git)
 
 WiFiManager::WiFiManager() {
-    // Load passwords from WiFi_Config.h (compiled in, not in git)
-    passwords[0] = WIFI_PASSWORD_1;
-    passwords[1] = WIFI_PASSWORD_2;
-    passwordCount = WIFI_PASSWORD_COUNT;
-    
     isConnected = false;
     connectedSSID = "";
+    passwordCount = 0;
     
-    Serial.println("WiFi Manager initialized from WiFi_Config.h");
+    Serial.println("\n=== WiFi Manager Initializing ===");
+    
+    // Load passwords from flash (Preferences/NVS)
+    loadPasswordsFromFlash();
+    
+    // If no passwords stored, add defaults
+    if (passwordCount == 0) {
+        Serial.println("No passwords in flash - adding defaults");
+        addPassword("10203040");
+        addPassword("aviaviavi");
+        savePasswordsToFlash();
+        Serial.println("Default passwords saved to flash");
+    }
+    
+    Serial.println("=== WiFi Manager Ready ===\n");
+}
+
+void WiFiManager::loadPasswordsFromFlash() {
+    preferences.begin("wifi", true);  // Read-only mode
+    
+    passwordCount = preferences.getInt("pass_count", 0);
+    
+    Serial.printf("Loading %d passwords from flash storage...\n", passwordCount);
+    
+    for (int i = 0; i < passwordCount && i < MAX_PASSWORDS; i++) {
+        String key = "pass_" + String(i);
+        passwords[i] = preferences.getString(key.c_str(), "");
+        Serial.printf("  Password %d: [%s] (length: %d)\n", i+1, passwords[i].c_str(), passwords[i].length());
+    }
+    
+    preferences.end();
+    Serial.println("Passwords loaded from flash");
+}
+
+void WiFiManager::savePasswordsToFlash() {
+    preferences.begin("wifi", false);  // Read-write mode
+    
+    Serial.printf("Saving %d passwords to flash storage...\n", passwordCount);
+    
+    preferences.putInt("pass_count", passwordCount);
+    
+    for (int i = 0; i < passwordCount; i++) {
+        String key = "pass_" + String(i);
+        preferences.putString(key.c_str(), passwords[i]);
+        Serial.printf("  Saved: %s = [%s]\n", key.c_str(), passwords[i].c_str());
+    }
+    
+    preferences.end();
+    Serial.println("Passwords saved to flash successfully");
+}
+
+void WiFiManager::addPassword(const String& password) {
+    if (passwordCount < MAX_PASSWORDS) {
+        passwords[passwordCount] = password;
+        passwordCount++;
+        Serial.printf("Added password: [%s] (total: %d)\n", password.c_str(), passwordCount);
+    } else {
+        Serial.println("Cannot add password - maximum reached");
+    }
+}
+
+void WiFiManager::clearPasswords() {
+    preferences.begin("wifi", false);
+    preferences.clear();
+    preferences.end();
+    
+    passwordCount = 0;
+    Serial.println("All passwords cleared from flash");
+}
+
+int WiFiManager::getPasswordCount() {
+    return passwordCount;
+}
+
+void WiFiManager::printStoredData() {
+    Serial.println("\n╔════════════════════════════════════════╗");
+    Serial.println("║   WiFi Flash Storage Contents         ║");
+    Serial.println("╚════════════════════════════════════════╝");
+    
+    preferences.begin("wifi", true);  // Read-only
+    
+    int count = preferences.getInt("pass_count", 0);
+    Serial.printf("Password Count: %d\n\n", count);
+    
+    if (count == 0) {
+        Serial.println("❌ No passwords stored in flash");
+    } else {
+        Serial.println("Stored Passwords:");
+        for (int i = 0; i < count; i++) {
+            String key = "pass_" + String(i);
+            String pass = preferences.getString(key.c_str(), "");
+            Serial.printf("  %d. [%s] (length: %d chars)\n", i+1, pass.c_str(), pass.length());
+        }
+    }
+    
+    preferences.end();
+    
+    Serial.println("\n╔════════════════════════════════════════╗");
+    Serial.println("║   Current Runtime Status              ║");
+    Serial.println("╚════════════════════════════════════════╝");
+    Serial.printf("Active Passwords in Memory: %d\n", passwordCount);
+    Serial.printf("WiFi Connected: %s\n", isConnected ? "YES" : "NO");
+    if (isConnected) {
+        Serial.printf("Connected SSID: %s\n", connectedSSID.c_str());
+        Serial.printf("IP Address: %s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("Signal Strength: %d dBm\n", WiFi.RSSI());
+    }
+    Serial.println("════════════════════════════════════════\n");
 }
 
 bool WiFiManager::connectToBestNetwork() {
