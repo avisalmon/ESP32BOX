@@ -74,6 +74,38 @@ Quick reference for validating flash storage implementations.
 
 ---
 
+### [SD_CARD_AUDIO_GUIDE.md](SD_CARD_AUDIO_GUIDE.md)
+**Complete guide for SD card interface and audio playback**
+
+**Contents:**
+- **SD Card Interface:**
+  - Hardware specifications and pin configuration
+  - Supported card types (SD, SDHC, MMC)
+  - File operations (read, write, search, list)
+  - Card information and formatting
+  
+- **Audio Playback System:**
+  - PCM5101A DAC specifications
+  - Supported formats (MP3, WAV, AAC, FLAC, OGG, OPUS)
+  - Volume control and playback functions
+  - Audio callbacks and event handling
+  
+- **Complete Examples:**
+  - Simple music player
+  - Playlist player
+  - Progress monitor
+  - UI integration with buttons
+  
+- **Best Practices:** SD card handling, audio optimization
+- **Troubleshooting:** Common issues and solutions
+- **API Reference:** Quick function lookup table
+
+**600+ lines** | Full audio system documentation
+
+**Perfect for:** Music player apps, audio feedback, sound effects
+
+---
+
 ## 🚀 Quick Start
 
 ### Adding a New Tab
@@ -88,6 +120,14 @@ Quick reference for validating flash storage implementations.
 3. Use Preferences for key-value storage
 4. Validate with [TEST_FLASH_STORAGE.md](TEST_FLASH_STORAGE.md)
 5. See `WiFi_Manager.cpp` for real-world example
+
+### Playing Audio from SD Card
+1. Read: [SD_CARD_AUDIO_GUIDE.md](SD_CARD_AUDIO_GUIDE.md) - SD Card Setup
+2. Insert SD card (FAT32 formatted)
+3. Put MP3 files on card
+4. Use `Play_Music("/", "song.mp3")` to play
+5. Control with `Music_pause()` / `Music_resume()`
+6. See `Audio_PCM5101.cpp` and `LVGL_Music.cpp` for examples
 
 ---
 
@@ -110,6 +150,17 @@ Quick reference for validating flash storage implementations.
   - Audio player interface
   - Complex interactions
   - State management
+
+- **`Audio_PCM5101.cpp/h`** - Audio playback system
+  - PCM5101A DAC initialization
+  - Music playback functions
+  - Volume control
+  - Duration and elapsed time
+
+- **`SD_Card.cpp/h`** - SD card interface
+  - Card initialization
+  - File search and listing
+  - Directory operations
 
 ### Configuration Files
 - **`WiFi_Config_DEPRECATED.txt`** - Migration notice (old hardcoded system)
@@ -135,6 +186,7 @@ Quick reference for validating flash storage implementations.
 | LVGL_TAB_DESIGN_GUIDE.md | 2,100+ | ✅ Complete | Oct 5, 2025 |
 | FLASH_STORAGE_GUIDE.md | 846 | ✅ Complete | Oct 4, 2025 |
 | TEST_FLASH_STORAGE.md | ~100 | ✅ Complete | Oct 4, 2025 |
+| SD_CARD_AUDIO_GUIDE.md | 600+ | ✅ Complete | Oct 11, 2025 |
 
 ---
 

@@ -37,6 +37,41 @@ void Driver_Loop(void *parameter)
   Serial.println("\n=== POST-CONNECTION STATUS ===");
   wifiManager.printStoredData();
   
+  // Test audio playback if SD card and file are available
+  Serial.println("\n╔════════════════════════════════════════╗");
+  Serial.println("║      🔊 AUDIO PLAYBACK TEST 🔊        ║");
+  Serial.println("╚════════════════════════════════════════╝");
+  
+  if (SD_MMC.cardType() != CARD_NONE) {
+    Serial.println("\n✓ SD Card detected");
+    Serial.println("🎵 Checking for A.mp3 in root directory...");
+    
+    if (SD_MMC.exists("/A.mp3")) {
+      Serial.println("✓ A.mp3 found!");
+      Serial.println("🎵 Starting playback...");
+      Play_Music_test();
+      
+      // Show duration
+      vTaskDelay(pdMS_TO_TICKS(1000));
+      Music_Duration();
+      
+      Serial.println("\n📝 Music is playing!");
+      Serial.println("   - The audio.loop() is called automatically");
+      Serial.println("   - Music will continue in background");
+    } else {
+      Serial.println("❌ A.mp3 not found");
+      Serial.println("📝 To test speaker:");
+      Serial.println("   1. Put an MP3 file on SD card");
+      Serial.println("   2. Name it 'A.mp3'");
+      Serial.println("   3. Place in root directory");
+      Serial.println("   4. Reset the device");
+    }
+  } else {
+    Serial.println("❌ No SD card detected");
+  }
+  
+  Serial.println("\n╚════════════════════════════════════════╝\n");
+  
   while(1)
   {
     PCF85063_Loop();
@@ -71,6 +106,9 @@ void setup()
   Serial.println("Calling Audio_Init...");
   Audio_Init();
   Serial.println("Audio_Init complete");
+  
+  // Audio system ready - can play music files from SD card once available
+  Serial.println("🔊 Audio system initialized (PCM5101A DAC)");
   
   // MIC_Init();  // Disabled - causes crash without SR model files
   

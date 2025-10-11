@@ -103,6 +103,23 @@ Quick reference for:
 
 ---
 
+### **🎵 [SD Card & Audio Guide](DEMO/Arduino/examples/LVGL_Arduino/docs/SD_CARD_AUDIO_GUIDE.md)**
+**Complete guide for SD card interface and audio playback**
+
+**600+ lines** covering:
+- **SD Card Interface:** Hardware specs, file operations, card management
+- **Audio Playback:** PCM5101A DAC, supported formats (MP3, WAV, AAC, FLAC, OGG, OPUS)
+- **Volume Control:** 0-21 levels, optimal settings
+- **Playback Functions:** Play, pause, resume, duration, elapsed time
+- **Complete Examples:** Music player, playlist, progress monitor, UI integration
+- **Best Practices:** SD handling, audio optimization, troubleshooting
+
+**Perfect for:** Music players, audio feedback, sound effects, voice playback
+
+**Tested and Working:** Audio playback confirmed operational! 🔊✅
+
+---
+
 ### **📖 [Documentation Index](DEMO/Arduino/examples/LVGL_Arduino/docs/README.md)**
 **Complete documentation hub with quick start guides and cross-references**
 
